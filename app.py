@@ -1,13 +1,14 @@
 import io
-import os
 from openai import OpenAI
 import base64
 import mimetypes
-client = OpenAI(api_key= os.environ.get('API_TOKEN'))
+client = OpenAI(api_key='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')
 from flask import Flask, request, jsonify
 from pdf2image import convert_from_bytes
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "https://pocket-pf-test-3c2c45652b6a.herokuapp.com"}})
 
 
 def image_to_base64(image_path):
