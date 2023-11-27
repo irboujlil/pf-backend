@@ -1,8 +1,9 @@
 import io
+import os
 from openai import OpenAI
 import base64
 import mimetypes
-client = OpenAI(api_key='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')
+client = OpenAI(api_key= os.environ.get('API_TOKEN'))
 from flask import Flask, request, jsonify
 from pdf2image import convert_from_bytes
 from flask_cors import CORS
