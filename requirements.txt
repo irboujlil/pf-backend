@@ -29,3 +29,4 @@ tqdm==4.66.1
 typing_extensions==4.8.0
 Werkzeug==3.0.1
 zipp==3.17.0
+Flask-CORS==4.0.0
