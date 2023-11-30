@@ -9,7 +9,7 @@ from pdf2image import convert_from_bytes
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "https://pocket-pf-test-3c2c45652b6a.herokuapp.com"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
 def image_to_base64(image_path):
