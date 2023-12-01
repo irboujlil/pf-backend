@@ -109,7 +109,7 @@ def file():
             "content": [
                 {
                     "type": "text",
-                    "text": "Give me a list of the critical points in this file. After that, generate test questions regarding the critical points.",
+                    "text": "Give me a list of the critical points in this file. Keep and it short and concise, 3-5 is good, with 1-2 subpoints for each. After that, generate test questions regarding the critical points. At least 8 questions.",
                 }
             ],
         }
@@ -154,7 +154,7 @@ def file2():
             "content": [
                 {
                     "type": "text",
-                    "text": "Give me a list of the critical points in this file. After that, generate various test questions regarding the critical points. The various questions must be in multiple choice format, long response format, short response format, and fill in the blank format. Make sure the format is given properly and clean.",
+                    "text": "Give me a list of the critical points in this file and keep and it short and concise, 3-5 is good, with 1-2 subpoints for each. After that, generate various test questions regarding the critical points. The various questions must be in multiple choice format, long response format, short response format, and fill in the blank format. Make sure the format is given properly and clean. At least 8 questions.",
                 }
             ],
         }
