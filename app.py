@@ -1,6 +1,8 @@
 import io
 import os
+from PIL import Image
 from openai import OpenAI
+from celery import Celery
 import base64
 import mimetypes
 client = OpenAI(api_key= os.environ.get('API_TOKEN'))
@@ -10,6 +12,17 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Use REDIS_URL from environment variables if available, else default to localhost
+redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+
+app.config['CELERY_BROKER_URL'] = redis_url
+app.config['result_backend'] = redis_url
+
+# Initialize Celery
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+
 
 
 def image_to_base64(image_path):
@@ -140,13 +153,11 @@ def file():
     #print(response.choices[0].message.content)
     return jsonify(response.choices[0].message.content)
 
-
-@app.route('/api/image', methods=['POST'])
-def file2():
-    data = request.json
-    filedata = data['filedata']
-    filename = data['filename']
-    #print(data)
+@celery.task
+def process_file_task(filedata, filename):
+    print(filename)
+    messages = []
+    # Your existing logic for processing the file
     file_bytes = base64.b64decode(filedata.split(',')[1])  # Decode base64
     messages = [
         {
@@ -160,28 +171,78 @@ def file2():
         }
     ]
 
+    #messages = []
+    #file_bytes = base64.b64decode(filedata.split(',')[1])  # Decode base64
+
     if filename.endswith('.pdf'):
-        # Convert PDF bytes to images in memory
         images = convert_from_bytes(file_bytes)
         for image in images:
+            # Resize or compress the image if necessary
+            image = resize_and_compress_image(image)  # Function to be implemented
             buffered = io.BytesIO()
-            image.save(buffered, format="JPEG")
+            image.save(buffered, format="JPEG", quality=85)  # Adjust quality to manage size
             img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
             img_data_uri = f"data:image/jpeg;base64,{img_base64}"
-            messages[0]["content"].append({"type": "image_url", "image_url": {"url": img_data_uri}})
+            messages[0]["content"].append({"type": "image_url", "image_url": {"url": img_data_uri, "detail": "low"}})
     else:
         # Read the image and convert it to base64
         #img_str = base64.b64encode(file.read()).decode('utf-8')
         messages[0]['content'].append({
             "type": "image_url", "image_url": {"url": filedata, "detail": "low"},
         })
+    print(messages)
     response = client.chat.completions.create(
-    model="gpt-4-vision-preview",
-    messages=messages,
-    max_tokens=400
+        model="gpt-4-vision-preview",
+        messages=messages,
+        max_tokens=400
     )
-    #print(response.choices[0].message.content)
-    return jsonify(response.choices[0].message.content)
+    return response.choices[0].message.content
+
+
+
+@app.route('/api/image', methods=['POST'])
+def file2():
+    data = request.json
+    filedata = data['filedata']
+    filename = data['filename']
+    #print(filedata)
+    print(filename)
+
+    # Enqueue the task
+    task = process_file_task.delay(filedata, filename)
+    
+    return jsonify({"task_id": task.id}), 202
+
+@app.route('/api/task/<task_id>', methods=['GET'])
+def get_task_status(task_id):
+    task = process_file_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        print("PENDING PDF")
+        return jsonify({"status": "pending"}), 202
+    elif task.state == 'FAILURE':
+        print("FAILED IN PDF")
+        return jsonify({"status": "failure", "error": str(task.info)}), 500
+    print(task.result)
+    return jsonify({"status": "success", "result": task.result})
+
+def resize_and_compress_image(image, max_width=1280, max_height=720, quality=85):
+    """
+    Resize and compress an image.
+    max_width: Maximum width of the resized image.
+    max_height: Maximum height of the resized image.
+    quality: JPEG quality for compression.
+    """
+    # Resize the image
+    image.thumbnail((max_width, max_height))
+
+    # Compress the image
+    buffered = io.BytesIO()
+    image.save(buffered, format="JPEG", quality=quality)
+    
+    # Get the compressed image
+    compressed_image = Image.open(buffered)
+
+    return compressed_image
 
 @app.route('/')
 def home():
