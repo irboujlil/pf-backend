@@ -11,7 +11,7 @@ from pdf2image import convert_from_bytes
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, support_credentials=True)
 
 # Use REDIS_URL from environment variables if available, else default to localhost
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
@@ -22,6 +22,13 @@ app.config['result_backend'] = redis_url
 # Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
+
+@app.after_request
+def after_request_func(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
 
 
 
