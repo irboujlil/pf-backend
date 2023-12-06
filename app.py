@@ -9,6 +9,7 @@ client = OpenAI(api_key= os.environ.get('API_TOKEN'))
 from flask import Flask, request, jsonify
 from pdf2image import convert_from_bytes
 from flask_cors import CORS
+from flask_cors import cross_origin
 
 app = Flask(__name__)
 CORS(app, support_credentials=True)
@@ -44,6 +45,7 @@ def image_to_base64(image_path):
     return image_base64
 
 @app.route('/api/upload-pdf', methods=['POST'])
+@cross_origin()
 def upload_pdf():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -95,6 +97,7 @@ def upload_pdf():
     return response
 
 @app.route('/api/assist', methods=['POST'])
+@cross_origin()
 def assist():
     data = request.json
     prompt = data.get('prompt')
@@ -117,6 +120,7 @@ def assist():
 
 
 @app.route('/api/file', methods=['POST'])
+@cross_origin()
 def file():
     data = request.json
     filedata = data['filedata']
@@ -208,6 +212,7 @@ def process_file_task(filedata, filename):
 
 
 @app.route('/api/image', methods=['POST'])
+@cross_origin()
 def file2():
     data = request.json
     filedata = data['filedata']
@@ -221,6 +226,7 @@ def file2():
     return jsonify({"task_id": task.id}), 202
 
 @app.route('/api/task/<task_id>', methods=['GET'])
+@cross_origin()
 def get_task_status(task_id):
     task = process_file_task.AsyncResult(task_id)
     if task.state == 'PENDING':
@@ -252,11 +258,13 @@ def resize_and_compress_image(image, max_width=1280, max_height=720, quality=85)
     return compressed_image
 
 @app.route('/')
+@cross_origin()
 def home():
     return "Hello, this is the Python Flask backend!"
 
 
 @app.route('/api/data')
+@cross_origin()
 def get_data():
     # This is where you can fetch or compute data
     data = {
