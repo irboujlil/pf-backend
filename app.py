@@ -11,7 +11,7 @@ from pdf2image import convert_from_bytes
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
 
 # Use REDIS_URL from environment variables if available, else default to localhost
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
