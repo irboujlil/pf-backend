@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Use REDIS_URL from environment variables if available, else default to localhost
-redis_url = urlparse(os.environ.get('REDIS_URL', 'redis://localhost:6379/0'))
+redis_url = str(os.environ.get('REDIS_URL', 'redis://localhost:6379/0'))
 
 app.config['CELERY_BROKER_URL'] = redis_url
 app.config['result_backend'] = redis_url
