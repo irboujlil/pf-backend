@@ -3,6 +3,7 @@ import os
 from PIL import Image
 from openai import OpenAI
 from celery import Celery
+from urllib.parse import urlparse
 import base64
 import mimetypes
 client = OpenAI(api_key= os.environ.get('API_TOKEN'))
@@ -12,24 +13,17 @@ from flask_cors import CORS
 from flask_cors import cross_origin
 
 app = Flask(__name__)
-CORS(app, support_credentials=True)
+CORS(app)
 
 # Use REDIS_URL from environment variables if available, else default to localhost
-redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+redis_url = urlparse(os.environ.get('REDIS_URL', 'redis://localhost:6379/0'))
 
-app.conf.update(BROKER_URL=os.environ['REDIS_URL'],
-                CELERY_RESULT_BACKEND=os.environ['REDIS_URL'])
+app.config['CELERY_BROKER_URL'] = redis_url
+app.config['result_backend'] = redis_url
 
 # Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
-
-@app.after_request
-def after_request_func(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-    return response
 
 
 
